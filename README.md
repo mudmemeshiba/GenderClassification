@@ -30,13 +30,30 @@ Deep Learning มีจุดเด่นที่เราไม่ต้อง
 
 โดยปกติแล้วโมเดลนี้เป็นที่นิยมสำหรับ Multiclass Classifier แต่ในงานนี้ผู้จัดทำได้ปรับเปลี่ยนโครงสร้างเล็กน้อยเพื่อทำให้โมเดลกลายเป็นโมเดล Binary Classifier (เพราะเรามีแค่ 2 Class) โดยตามปกติแล้วโมเดล ResNet-18 จะมีสถาปัตยกรรมดังนี้ (โครงสร้าง 3\*224\*224)
 
-| Conv1: 7×7, stride 2, 64 แชนเนล → MaxPool 3×3 s2Stage 1: 2× BasicBlock (แต่ละบล็อก: 3×3 conv → BN → ReLU → 3×3 conv → BN \+ residual add → ReLU) เอาต์พุต 64 แชนเนลStage 2: 2× BasicBlock เอาต์พุต 128 แชนเนล (บล็อกแรกมี downsample/stride 2\)Stage 3: 2× BasicBlock เอาต์พุต 256 แชนเนล (downsample/stride 2\)Stage 4: 2× BasicBlock เอาต์พุต 512 แชนเนล (downsample/stride 2\)Global Average Pooling → เวกเตอร์ขนาด 512 |
-| :---- |
+    Conv1: 7×7, stride 2, 64 แชนเนล → MaxPool 3×3 s2
+    Stage 1: 2× BasicBlock 
+          (แต่ละบล็อก: 3×3 conv → BN → ReLU → 3×3 conv → BN + residual add → ReLU)
+          เอาต์พุต 64 แชนเนล
+    Stage 2: 2× BasicBlock 
+          เอาต์พุต 128 แชนเนล (บล็อกแรกมี downsample / stride 2)
+    Stage 3: 2× BasicBlock 
+          เอาต์พุต 256 แชนเนล (downsample / stride 2)
+    Stage 4: 2× BasicBlock 
+          เอาต์พุต 512 แชนเนล (downsample / stride 2)
+    Global Average Pooling → เวกเตอร์ขนาด 512
+
 
 แต่ตามที่กล่าวไว้ว่าผู้จัดมีความต้องการจะเปลี่ยนให้โมเดเป็น Binary Classifier จึงมีการเพิ่ม Head เข้าไปแบบนี้
 
-| in*\_feats \= model.fc.in\_*features  model.fc \= nn.Sequential(    nn.Dropout(0.3),    nn.Linear(in\_feats, 1\)  ) |
-| :---- |
+
+    in_feats = model.fc.in_features  
+    
+    model.fc = nn.Sequential(
+    nn.Dropout(0.3),      # Add dropout for regularization
+    nn.Linear(in_feats, 1)  # Output layer for binary classification
+    )
+
+
 
 ### 
 
@@ -49,8 +66,47 @@ Convolutional Neural Network (CNN) แบบ feedforward ประกอบด�
 
 โดยจะออกแบบ Convolutional Feature Extractor เป็น miniCNN (CNN ขนาดเล็ก) ดังนี้
 
-| import torch import torch.nn as nn class MiniCNN(nn.Module):     def \_\_init\_\_(self, num\_classes=1):         super().\_\_init\_\_()         self.features \= nn.Sequential(             nn.Conv2d(3, 32, 3, padding=1),             nn.BatchNorm2d(32),             nn.GELU(),             nn.MaxPool2d(2),      \# 224 \-\> 112             nn.Conv2d(32, 64, 3, padding=1),             nn.BatchNorm2d(64),             nn.GELU(),             nn.MaxPool2d(2),      \# 112 \-\> 56             nn.Conv2d(64, 128, 3, padding=1),             nn.BatchNorm2d(128),             nn.GELU(),             nn.MaxPool2d(2),      \# 56 \-\> 28         )         self.classifier \= nn.Sequential(             nn.AdaptiveAvgPool2d(1),  \# \-\> (128,1,1)             nn.Flatten(),             nn.Dropout(0.5),             nn.Linear(128, num\_classes)         )     def forward(self, x):         x \= self.features(x)         x \= self.classifier(x)         return x \# ใช้งาน model \= MiniCNN(num\_classes=1).to(device)  |
-| :---- |
+
+    import torch
+    import torch.nn as nn
+    class MiniCNN(nn.Module):
+    
+    def __init__(self, num_classes=1):
+        super().__init__()
+        # Feature extractor
+        self.features = nn.Sequential(
+            nn.Conv2d(3, 32, 3, padding=1),
+            nn.BatchNorm2d(32),
+            nn.GELU(),
+            nn.MaxPool2d(2),      # 224 -> 112
+
+            nn.Conv2d(32, 64, 3, padding=1),
+            nn.BatchNorm2d(64),
+            nn.GELU(),
+            nn.MaxPool2d(2),      # 112 -> 56
+
+            nn.Conv2d(64, 128, 3, padding=1),
+            nn.BatchNorm2d(128),
+            nn.GELU(),
+            nn.MaxPool2d(2)       # 56 -> 28
+        )
+
+        # Classifier head
+        self.classifier = nn.Sequential(
+            nn.AdaptiveAvgPool2d(1),  # -> (128,1,1)
+            nn.Flatten(),
+            nn.Dropout(0.5),
+            nn.Linear(128, num_classes)
+        )
+
+    def forward(self, x):
+        x = self.features(x)
+        x = self.classifier(x)
+        return x
+
+# Instantiate model
+model = MiniCNN(num_classes=1).to(device)
+
 
 <img width="1742" height="520" alt="Screenshot 2025-11-04 113603" src="https://github.com/user-attachments/assets/cb11b319-5dde-4d0e-a67b-d14789bd3887" />
 *หมายเหตุ: มีการใช้ GELU หลังจากแต่ละ Convolutional Block (Conv+ BN \+ GELU)*  
@@ -187,7 +243,7 @@ Link: [https://www.kaggle.com/datasets/cashutosh/gender-classification-dataset](
 
 ### ResNet-18
 
-ไฟล์โมเดล: ttps://[drive.google.com/file/d/1RBpNTHELuHiHnUgErDAgsPyVNiIcSUyn/view?usp=sharing](http://drive.google.com/file/d/1RBpNTHELuHiHnUgErDAgsPyVNiIcSUyn/view?usp=sharing)
+ไฟล์โมเดล: https://[drive.google.com/file/d/1RBpNTHELuHiHnUgErDAgsPyVNiIcSUyn/view?usp=sharing](http://drive.google.com/file/d/1RBpNTHELuHiHnUgErDAgsPyVNiIcSUyn/view?usp=sharing)
 
 * การเทรนรอบแรก  
   * Loss ลดลงเรื่อยๆ และมี Accuracy สูงขึ้นเรื่อยๆ
