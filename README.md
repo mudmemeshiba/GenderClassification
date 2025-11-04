@@ -6,8 +6,8 @@ Enhancing Gender Classification Model
 
 จัดทําโดย
 
-พชรมน ปุตระเศรณี 6610502153  
-ณรัณ วงศ์วุฒิสาโรช 6610505357
+- พชรมน ปุตระเศรณี 6610502153  
+- ณรัณ วงศ์วุฒิสาโรช 6610505357
 
 เสนอ ผศ.ดร.ภารุจ รัตนวรพันธุ์
 
@@ -52,7 +52,7 @@ Convolutional Neural Network (CNN) แบบ feedforward ประกอบด�
 | import torch import torch.nn as nn class MiniCNN(nn.Module):     def \_\_init\_\_(self, num\_classes=1):         super().\_\_init\_\_()         self.features \= nn.Sequential(             nn.Conv2d(3, 32, 3, padding=1),             nn.BatchNorm2d(32),             nn.GELU(),             nn.MaxPool2d(2),      \# 224 \-\> 112             nn.Conv2d(32, 64, 3, padding=1),             nn.BatchNorm2d(64),             nn.GELU(),             nn.MaxPool2d(2),      \# 112 \-\> 56             nn.Conv2d(64, 128, 3, padding=1),             nn.BatchNorm2d(128),             nn.GELU(),             nn.MaxPool2d(2),      \# 56 \-\> 28         )         self.classifier \= nn.Sequential(             nn.AdaptiveAvgPool2d(1),  \# \-\> (128,1,1)             nn.Flatten(),             nn.Dropout(0.5),             nn.Linear(128, num\_classes)         )     def forward(self, x):         x \= self.features(x)         x \= self.classifier(x)         return x \# ใช้งาน model \= MiniCNN(num\_classes=1).to(device)  |
 | :---- |
 
-![][image1]  
+<img width="1742" height="520" alt="Screenshot 2025-11-04 113603" src="https://github.com/user-attachments/assets/cb11b319-5dde-4d0e-a67b-d14789bd3887" />
 *หมายเหตุ: มีการใช้ GELU หลังจากแต่ละ Convolutional Block (Conv+ BN \+ GELU)*  
 *หลังจาก 3 Convolution layers แล้วจึงทำในส่วนของ Classifier ที่เปลี่ยน feature map 3D เป็น logits หรือ ค่าของ class ที่ทำนายได้*
 
@@ -192,36 +192,42 @@ Link: [https://www.kaggle.com/datasets/cashutosh/gender-classification-dataset](
 * การเทรนรอบแรก  
   * Loss ลดลงเรื่อยๆ และมี Accuracy สูงขึ้นเรื่อยๆ
 
-![][image8]
+<img width="387" height="210" alt="image" src="https://github.com/user-attachments/assets/56b2f89a-13bc-4632-9626-018b755c9a68" />
 
 * นำ weight ที่ดีที่สุดจากการเทรนรอบแรกมาเทรนต่อ (Fine tuning)  
   * พยายามทำให้ Accuracy มากที่สุด และหยุดเมื่อมี Accuracy เพิ่มไม่ได้
+<img width="379" height="101" alt="image" src="https://github.com/user-attachments/assets/2495651b-85db-41d4-bb29-c7345b335672" />
 
-![][image9]
 
 * ผลลัพธ์  
   * Best training accuracy \= 0.9992  
   * Best validation accuracy \= 0.9749
 
+<img width="266" height="227" alt="image" src="https://github.com/user-attachments/assets/d188be3e-10b1-4dd9-beee-c816913bda3a" />
+<img width="314" height="98" alt="image" src="https://github.com/user-attachments/assets/fa746c27-03ad-4d9a-b5d5-e242d1c5bdc4" />
 
 ### miniCNN
 
 * การเทรนรอบแรก
 
-![][image10]  
-![][image11]![][image12]
+<img width="750" height="384" alt="Screenshot 2025-11-03 235415" src="https://github.com/user-attachments/assets/041e6954-be13-4402-b040-175573e3997e" />
+<img width="485" height="248" alt="Screenshot 2025-11-04 001105" src="https://github.com/user-attachments/assets/b94c497b-da34-45e4-ae73-2e6c16d75df9" />
+<img width="395" height="368" alt="image" src="https://github.com/user-attachments/assets/f0be7535-f8a7-4a9b-855e-622dc077bd56" />
+
+
 
 * การเทรนรอบที่สอง นำ weight ที่ดีที่สุดจากรอบแรกมาเทรนต่อ ได้ผลลัพธ์ ดังนี้  
   * Best training accuracy \= 0.9186  
   * Best validation accuracy \= 0.9327
 
-![][image13]  
-![][image14]![][image15]
+<img width="732" height="634" alt="Screenshot 2025-11-04 010354" src="https://github.com/user-attachments/assets/aa9745ce-602f-422b-b488-b617cb8c947b" />
+<img width="496" height="238" alt="Screenshot 2025-11-04 010621" src="https://github.com/user-attachments/assets/b629e561-3f0d-4948-be65-34aeedfc6bb1" />
+<img width="395" height="368" alt="image" src="https://github.com/user-attachments/assets/3b4b8454-0441-4373-9ff0-091fb5210df0" />
+
 
 ## Inference 
 
 เมื่อนำรูปส่วนตัวมาให้โมเดลทำนาย miniCNN อาจยังให้ผลลัพธ์ที่มีความน่าจะเป็นจาก sigmoid function ต่ำ แต่จาก validation ในขั้นก่อน accuracy สามารถทำนายถูกคลาสถึง 93.27%  
-![][image16]  
 \# 1 \- ('female', 0.04073137044906616)  
 \# 2 \- ('female', 0.16267883777618408)
 
